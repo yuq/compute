@@ -13,4 +13,4 @@ test-hip.o: test-hip.cpp
 	hipcc -c -o $@ $<
 
 clean:
-	rm *.o *.out
+	rm -rf *.o *.out
