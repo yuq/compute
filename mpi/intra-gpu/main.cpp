@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+
 #include <mpi.h>
 #include <hip/hip_runtime.h>
 
@@ -12,28 +15,33 @@
     } \
 }
 
-#define BUFFER_SIZE 0x100000
-char h_buffer[BUFFER_SIZE] = "hello";
+#define BUFFER_SIZE 0x1000
 
 void sender(void)
 {
-	char *d_buffer;
-	CHECK(hipMalloc(&d_buffer, sizeof(h_buffer)));
-	CHECK(hipMemcpy(d_buffer, h_buffer, sizeof(h_buffer), hipMemcpyHostToDevice));
+	char *h_buffer = (char *)malloc(BUFFER_SIZE);
+	assert(h_buffer);
+	memcpy(h_buffer, "hello", 6);
 
-	MPI_Send(d_buffer, sizeof(h_buffer), MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+	char *d_buffer;
+	CHECK(hipMalloc(&d_buffer, BUFFER_SIZE));
+	CHECK(hipMemcpy(d_buffer, h_buffer, BUFFER_SIZE, hipMemcpyHostToDevice));
+
+	MPI_Send(d_buffer, BUFFER_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 }
 
 void receiver(void)
 {
 	char *d_buffer;
-	CHECK(hipMalloc(&d_buffer, sizeof(h_buffer)));
+	CHECK(hipMalloc(&d_buffer, BUFFER_SIZE));
 	
 	MPI_Status status;
-	MPI_Recv(d_buffer, sizeof(h_buffer), MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+	MPI_Recv(d_buffer, BUFFER_SIZE, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-	char result[BUFFER_SIZE];
-	CHECK(hipMemcpy(result, d_buffer, sizeof(h_buffer), hipMemcpyDeviceToHost));
+	char *result = (char *)malloc(BUFFER_SIZE);
+	assert(result);
+
+	CHECK(hipMemcpy(result, d_buffer, BUFFER_SIZE, hipMemcpyDeviceToHost));
 	printf("result: %s\n", result);
 }
 
