@@ -96,26 +96,14 @@ static void init_packet(hsa_agent_t *agent, hsa_kernel_dispatch_packet_t *packet
 	packet->grid_size_z = 1;
 
 	struct test_args {
-		//float *in_1;
-		//float *in_2;
 		float *out;
 	} *args = NULL;
 	assert(hsa_memory_allocate(regions->kernarg, sizeof(args), (void **)&args) == HSA_STATUS_SUCCESS);
 	packet->kernarg_address = args;
 
-	float *in_1 = NULL, *in_2 = NULL, *out = NULL;
-	assert(hsa_memory_allocate(regions->vis_vram, 256 * 4, (void **)&in_1) == HSA_STATUS_SUCCESS);
-	assert(hsa_memory_allocate(regions->vis_vram, 256 * 4, (void **)&in_2) == HSA_STATUS_SUCCESS);
+	float *out = NULL;
 	assert(hsa_memory_allocate(regions->vis_vram, 256 * 4, (void **)&out) == HSA_STATUS_SUCCESS);
-	/*
-	for (int i = 0; i < 256; i++) {
-		in_1[i] = 1.5;
-		in_2[i] = 2.5;
-		out[i] = 0.0;
-	}
-	*/
-	//args->in_1 = in_1;
-	//args->in_2 = in_2;
+
 	args->out = out;
 	result_out = out;
 
