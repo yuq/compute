@@ -6,7 +6,7 @@
 
 #include <hip/hip_runtime.h>
 
-#define VECTOR_SIZE 0x100000
+#define VECTOR_SIZE 0x10000
 #define BLOCK_SIZE 512
 
 __global__ void vec_add(double *a, double *b, double *c, int n)
