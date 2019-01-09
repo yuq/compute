@@ -1,60 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <hip/hip_runtime.h>
-#include <hipblas.h>
-
-#define CHECK(cmd) \
-{\
-    hipError_t error  = cmd;\
-    if (error != hipSuccess) { \
-        fprintf(stderr, "error: '%s'(%d) at %s:%d\n", hipGetErrorString(error), error,__FILE__, __LINE__); \
-        exit(EXIT_FAILURE);\
-	  }\
-}
 
 extern "C" {
 void test_hip_(void);
 }
 
+#define VECTOR_SIZE 0x10000
+#define BLOCK_SIZE 512
+
+__global__ void vec_add(double *a, double *b, double *c, int n)
+{
+	int id = blockIdx.x*blockDim.x+threadIdx.x;
+	if (id < n)
+		c[id] = a[id] + b[id];
+}
+
 void test_hip_(void)
 {
-  hipDeviceProp_t props;
-  CHECK(hipGetDeviceProperties(&props, 0));
-  printf ("info: running on device %s\n", props.name);
+	double *A_h, *B_h, *C_h;
+	double *A_d, *B_d, *C_d;
+	int size = VECTOR_SIZE;
+	int nb = size * sizeof(double);
 
-  double *A_h, *B_h, *C_h;
-  double *A_d, *B_d, *C_d;
-  int size = 16;
-  int nb = size * size * sizeof(double);
-
-  A_h = (double *)malloc(nb);
-  B_h = (double *)malloc(nb);
-  C_h = (double *)malloc(nb);
+	A_h = (double *)malloc(nb);
+	B_h = (double *)malloc(nb);
+	C_h = (double *)malloc(nb);
+	assert(A_h && B_h && C_h);
   
-  for (int i = 0; i < size * size; i++)
-    A_h[i] = B_h[i] = C_h[i] = 1;
+	for (int i = 0; i < size; i++) {
+		A_h[i] = B_h[i] = 1;
+		C_h[i] = 0;
+	}
 
-  CHECK(hipMalloc(&A_d, nb));
-  CHECK(hipMalloc(&B_d, nb));
-  CHECK(hipMalloc(&C_d, nb));
+	assert(hipMalloc(&A_d, nb) == hipSuccess);
+	assert(hipMalloc(&B_d, nb) == hipSuccess);
+	assert(hipMalloc(&C_d, nb) == hipSuccess);
 
-  CHECK(hipMemcpy(A_d, A_h, nb, hipMemcpyHostToDevice));
-  CHECK(hipMemcpy(B_d, B_h, nb, hipMemcpyHostToDevice));
-  CHECK(hipMemcpy(C_d, C_h, nb, hipMemcpyHostToDevice));
+	assert(hipMemcpy(A_d, A_h, nb, hipMemcpyHostToDevice) == hipSuccess);
+	assert(hipMemcpy(B_d, B_h, nb, hipMemcpyHostToDevice) == hipSuccess);
 
-  hipblasHandle_t handle;
-  hipblasCreate(&handle);
+	hipLaunchKernelGGL(vec_add, dim3(VECTOR_SIZE/BLOCK_SIZE), dim3(BLOCK_SIZE),
+			   0, 0, A_d, B_d, C_d, size);
 
-  hipblasOperation_t transa = HIPBLAS_OP_N;
-  hipblasOperation_t transb = HIPBLAS_OP_N;
-  double alpha = 1, beta = 1;
-  
-  hipblasDgemm(handle, transa, transb, size, size, size,
-	       &alpha, A_d, size, B_d, size, &beta, C_d, size);
+	assert(hipMemcpy(C_h, C_d, nb, hipMemcpyDeviceToHost) == hipSuccess);
+	for (int i = 0; i < size; i++)
+		assert(C_h[i] == 2);
 
-  CHECK(hipMemcpy(C_h, C_d, nb, hipMemcpyDeviceToHost));
-
-  for (int i = 0; i < size * size; i++)
-    printf("%f ", C_h[i]);
-  printf("\n");
+	free(A_h);
+	free(B_h);
+	free(C_h);
+	hipFree(A_d);
+	hipFree(B_d);
+	hipFree(C_d);
 }
