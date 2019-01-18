@@ -15,13 +15,13 @@
     } \
 }
 
-#define BUFFER_SIZE 0x1000
+#define BUFFER_SIZE 0x400000
 
 void sender(void)
 {
 	char *h_buffer = (char *)malloc(BUFFER_SIZE);
 	assert(h_buffer);
-	memcpy(h_buffer, "hello", 6);
+	memset(h_buffer, 0x23, BUFFER_SIZE);
 
 	char *d_buffer;
 	CHECK(hipMalloc(&d_buffer, BUFFER_SIZE));
@@ -42,7 +42,13 @@ void receiver(void)
 	assert(result);
 
 	CHECK(hipMemcpy(result, d_buffer, BUFFER_SIZE, hipMemcpyDeviceToHost));
-	printf("result: %s\n", result);
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        if (result[i] != 0x23) {
+            printf("fail\n");
+            return;
+        }
+    }
+    printf("pass\n");
 }
 
 int main(int argc, char **argv)
