@@ -36,7 +36,7 @@ void *alloc_buf(amdgpu_device_handle device_handle)
     return cpu;
 }
 
-void copy_one(void *dst, void *src)
+void copy_one(const char *name, void *dst, void *src)
 {
     struct timespec tv1, tv2;
 	assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
@@ -52,7 +52,7 @@ void copy_one(void *dst, void *src)
 	end = end * 1e9 + tv2.tv_nsec;
 
 	double rate = BUFF_SIZE / (end - start);
-	printf("copy rate %f GB/s\n", rate);
+	printf("%s copy rate %f GB/s\n", name, rate);
 }
 
 int main(void)
@@ -68,11 +68,23 @@ int main(void)
     assert(!amdgpu_query_gpu_info(device_handle, &di));
     printf("asic id %x\n", di.asic_id);
 
-    void *dst = alloc_buf(device_handle);
-    void *src = alloc_buf(device_handle);
+    void *pdst = alloc_buf(device_handle);
+    void *psrc = alloc_buf(device_handle);
+    void *hdst = malloc(BUFF_SIZE);
+    void *hsrc = malloc(BUFF_SIZE);
+    assert(hdst && hsrc);
 
     for (int i = 0; i < 10; i++)
-        copy_one(dst, src);
+        copy_one("P2P", pdst, psrc);
+
+    for (int i = 0; i < 10; i++)
+        copy_one("H2H", hdst, hsrc);
+
+    for (int i = 0; i < 10; i++)
+        copy_one("P2H", pdst, hsrc);
+
+    for (int i = 0; i < 10; i++)
+        copy_one("H2P", hdst, psrc);
 
     return 0;
 }
