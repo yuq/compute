@@ -23,6 +23,7 @@ void *alloc_buf(amdgpu_device_handle device_handle)
         .flags = AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED,
     };
 
+    //req.flags |= AMDGPU_GEM_CREATE_CPU_GTT_USWC;
     assert(!amdgpu_bo_alloc(device_handle, &req, &buf_handle));
 
     struct amdgpu_bo_info info;
@@ -81,10 +82,10 @@ int main(void)
         copy_one("H2H", hdst, hsrc);
 
     for (int i = 0; i < 10; i++)
-        copy_one("P2H", pdst, hsrc);
+        copy_one("H2P", pdst, hsrc);
 
     for (int i = 0; i < 10; i++)
-        copy_one("H2P", hdst, psrc);
+        copy_one("P2H", hdst, psrc);
 
     return 0;
 }
