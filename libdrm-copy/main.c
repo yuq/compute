@@ -75,6 +75,11 @@ int main(void)
     void *hsrc = malloc(BUFF_SIZE);
     assert(hdst && hsrc);
 
+    memset(pdst, 0, BUFF_SIZE);
+    memset(psrc, 0, BUFF_SIZE);
+    memset(hdst, 0, BUFF_SIZE);
+    memset(hsrc, 0, BUFF_SIZE);
+
     for (int i = 0; i < 10; i++)
         copy_one("P2P", pdst, psrc);
 
@@ -86,6 +91,22 @@ int main(void)
 
     for (int i = 0; i < 10; i++)
         copy_one("P2H", hdst, psrc);
+
+    /*
+    printf("P %p %p H %p %p\n", pdst, psrc, hdst, hsrc);
+
+    int dp = open("/sys/kernel/debug/page_tables/current_user", O_RDONLY);
+    assert(dp);
+
+    char *data = malloc(0x1000000);
+    assert(data);
+
+    size_t size = read(dp, data, 0x1000000);
+    assert(size < 0x1000000);
+    printf("%s", data);
+
+    close(dp);
+    */
 
     return 0;
 }
