@@ -24,6 +24,8 @@ void test_dp(int p2d, int use_hip)
         assert(hipMalloc(&src, BUFF_SIZE) == hipSuccess);
         assert(hipMallocHost(&dst, BUFF_SIZE) == hipSuccess);
     }
+    memset(src, 0, BUFF_SIZE);
+    memset(dst, 0, BUFF_SIZE);
 
     struct timespec tv1, tv2;
 	assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
@@ -63,6 +65,8 @@ void test_dd(int cross_gpu)
     assert(hipMalloc(&dst, BUFF_SIZE) == hipSuccess);
     hipSetDevice(0);
     assert(hipMalloc(&src, BUFF_SIZE) == hipSuccess);
+    memset(src, 0, BUFF_SIZE);
+    memset(dst, 0, BUFF_SIZE);
 
     hipStream_t stream;
     assert(hipStreamCreate(&stream) == hipSuccess);
@@ -114,6 +118,8 @@ void test_pp(void)
 
     assert(hipMallocHost(&dst, BUFF_SIZE) == hipSuccess);
     assert(hipMallocHost(&src, BUFF_SIZE) == hipSuccess);
+    memset(src, 0, BUFF_SIZE);
+    memset(dst, 0, BUFF_SIZE);
 
     for (int i = 0; i < 10; i++)
         test_copy_one("P2P", dst, src);
@@ -129,6 +135,9 @@ void test_hh(void)
 
     void *src = malloc(BUFF_SIZE);
     assert(src);
+
+    memset(src, 0, BUFF_SIZE);
+    memset(dst, 0, BUFF_SIZE);
 
     for (int i = 0; i < 10; i++)
         test_copy_one("H2H", dst, src);
@@ -153,6 +162,9 @@ void test_ph(int p2h)
 
         assert(hipMallocHost(&dst, BUFF_SIZE) == hipSuccess);
     }
+
+    memset(src, 0, BUFF_SIZE);
+    memset(dst, 0, BUFF_SIZE);
 
     for (int i = 0; i < 10; i++)
         test_copy_one(p2h ? "P2H" : "H2P", dst, src);
