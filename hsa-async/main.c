@@ -173,8 +173,8 @@ int main(int argc, char **argv)
 	assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
 
     for (int i = 0; i < BUFF_NUM; i++) {
-        status = hsa_amd_memory_async_copy(gtt_ptr[i], agent1,
-                                           vram_ptr[i], agent0,
+        status = hsa_amd_memory_async_copy(gtt_ptr[0], agent1,
+                                           vram_ptr[0], agent0,
                                            BUFF_SIZE, 0, NULL,
                                            signal[i]);
         assert(status == HSA_STATUS_SUCCESS);
@@ -185,7 +185,11 @@ int main(int argc, char **argv)
         while (hsa_signal_wait_acquire(signal[i], HSA_SIGNAL_CONDITION_LT, 1,
                                        UINT64_MAX, HSA_WAIT_STATE_ACTIVE));
         */
-        while (hsa_signal_load_scacquire(signal[i]) != 0);
+        while (1) {
+            hsa_signal_value_t v = hsa_signal_load_scacquire(signal[i]);
+            printf("v=%ld\n", v);
+        }
+        //while (hsa_signal_load_scacquire(signal[i]) != 0);
     }
 
     assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv2));

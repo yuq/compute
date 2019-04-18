@@ -15,35 +15,35 @@
     } \
 }
 
-#define BUFFER_SIZE 0x400000
+#define BUFFER_SIZE 0x100000
 
 void sender(void)
 {
-	char *h_buffer = (char *)malloc(BUFFER_SIZE);
-	assert(h_buffer);
-	memset(h_buffer, 0x23, BUFFER_SIZE);
+    void *buffer;
+    assert(!posix_memalign(&buffer, 0x1000, BUFFER_SIZE));
+    memset(buffer, 0x23, BUFFER_SIZE);
 
-	char *d_buffer;
-	CHECK(hipMalloc(&d_buffer, BUFFER_SIZE));
-	CHECK(hipMemcpy(d_buffer, h_buffer, BUFFER_SIZE, hipMemcpyHostToDevice));
+    assert(hipHostRegister(buffer, BUFFER_SIZE, hipHostRegisterDefault) == hipSuccess);
 
-	MPI_Send(d_buffer, BUFFER_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+    memset(buffer, 0x23, BUFFER_SIZE);
+
+	MPI_Send(buffer, BUFFER_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 }
 
 void receiver(void)
 {
-	char *d_buffer;
-	CHECK(hipMalloc(&d_buffer, BUFFER_SIZE));
-	
+    unsigned char *buffer;
+    assert(!posix_memalign((void **)&buffer, 0x1000, BUFFER_SIZE));
+
+    assert(hipHostRegister((void *)buffer, BUFFER_SIZE, hipHostRegisterDefault) == hipSuccess);
+
+    memset(buffer, 0x23, BUFFER_SIZE);
+
 	MPI_Status status;
-	MPI_Recv(d_buffer, BUFFER_SIZE, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+	MPI_Recv(buffer, BUFFER_SIZE, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-	char *result = (char *)malloc(BUFFER_SIZE);
-	assert(result);
-
-	CHECK(hipMemcpy(result, d_buffer, BUFFER_SIZE, hipMemcpyDeviceToHost));
     for (int i = 0; i < BUFFER_SIZE; i++) {
-        if (result[i] != 0x23) {
+        if (buffer[i] != 0x23) {
             printf("fail\n");
             return;
         }

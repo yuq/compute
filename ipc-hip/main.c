@@ -8,7 +8,8 @@
 
 #include <hip/hip_runtime.h>
 
-#define BUFF_SIZE (1 << 30)
+//#define BUFF_SIZE (1 << 30)
+#define BUFF_SIZE 0xd0a000
 
 static void parent(int fd)
 {

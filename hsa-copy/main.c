@@ -94,7 +94,7 @@ static hsa_status_t test_gtt_region_callback(hsa_region_t region, void* data)
 		*ret = region;
 		return HSA_STATUS_INFO_BREAK;
 	}
-
+    
 	return HSA_STATUS_SUCCESS;
 }
 
