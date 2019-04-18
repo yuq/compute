@@ -11,4 +11,7 @@ hello.co: hello.o
 	$(CLANG) -target amdgcn--amdhsa -o $@ $<
 
 hello.o: hello.s
-	$(CLANG) -x assembler -target amdgcn--amdhsa -mcpu=gfx900 -c -o $@ $<
+	$(CLANG) -x assembler -target amdgcn--amdhsa -mcpu=gfx906 -c -o $@ $<
+
+clean:
+	rm -rf *.o *.out *.co
