@@ -194,10 +194,11 @@ int main(int argc, char **argv)
 			 UINT32_MAX, UINT32_MAX, &queue);
 
 	// Atomically request a new packet ID.
-	uint64_t packet_id = hsa_queue_add_write_index_screlease(queue, 1);
+	uint64_t packet_id = hsa_queue_load_write_index_relaxed(queue);
+	uint64_t next_packet_id = packet_id + 1;
 
 	// Wait until the queue is not full before writing the packet
-	while (packet_id - hsa_queue_load_read_index_scacquire(queue) >= queue->size);
+	while (next_packet_id - hsa_queue_load_read_index_scacquire(queue) >= queue->size);
 
 	// Calculate the virtual address where to place the packet
 	hsa_kernel_dispatch_packet_t *packet = (hsa_kernel_dispatch_packet_t*)queue->base_address + packet_id;
@@ -206,6 +207,9 @@ int main(int argc, char **argv)
 
 	// Create a signal with an initial value of one to monitor the task completion
 	hsa_signal_create(1, 0, NULL, &packet->completion_signal);
+
+	// Increase queue write index
+	hsa_queue_store_write_index_relaxed(queue, next_packet_id);
 
 	// Notify the queue that the packet is ready to be processed
 	hsa_signal_store_screlease(queue->doorbell_signal, packet_id);
