@@ -89,16 +89,19 @@ static float *in_A, *in_B, *out_C;
 
 static void alloc_memory(hsa_agent_t *agent, struct test_regions *regions)
 {
-    assert(hsa_memory_allocate(regions->vis_vram, MAT_SIZE, (void **)&in_A) == HSA_STATUS_SUCCESS);
-    assert(hsa_memory_allocate(regions->vis_vram, MAT_SIZE, (void **)&in_B) == HSA_STATUS_SUCCESS);
-    assert(hsa_memory_allocate(regions->vis_vram, MAT_SIZE, (void **)&out_C) == HSA_STATUS_SUCCESS);
-    memset(out_C, 0, MAT_SIZE);
-    for (int i = 0; i < MAT_DIM_Y; i++) {
-        for (int j = 0; j < MAT_DIM_X; j++) {
-            in_A[i * MAT_DIM_X + j] = 1;
-            in_B[i * MAT_DIM_X + j] = 5;
-        }
-    }
+	//hsa_region_t region = regions->vis_vram;
+	hsa_region_t region = regions->gtt;
+
+	assert(hsa_memory_allocate(region, MAT_SIZE, (void **)&in_A) == HSA_STATUS_SUCCESS);
+	assert(hsa_memory_allocate(region, MAT_SIZE, (void **)&in_B) == HSA_STATUS_SUCCESS);
+	assert(hsa_memory_allocate(region, MAT_SIZE, (void **)&out_C) == HSA_STATUS_SUCCESS);
+	memset(out_C, 0, MAT_SIZE);
+	for (int i = 0; i < MAT_DIM_Y; i++) {
+		for (int j = 0; j < MAT_DIM_X; j++) {
+			in_A[i * MAT_DIM_X + j] = 1;
+			in_B[i * MAT_DIM_X + j] = 5;
+		}
+	}
 }
 
 static void init_packet(hsa_agent_t *agent, hsa_kernel_dispatch_packet_t *packet, struct test_regions *regions)
@@ -114,18 +117,18 @@ static void init_packet(hsa_agent_t *agent, hsa_kernel_dispatch_packet_t *packet
 	packet->grid_size_z = 1;
 
 	struct test_args {
-        float *in_A;
-        float *in_B;
+		float *in_A;
+		float *in_B;
 		float *out_C;
 	} *args = NULL;
 	assert(hsa_memory_allocate(regions->kernarg, sizeof(args), (void **)&args) == HSA_STATUS_SUCCESS);
 	packet->kernarg_address = args;
 
-    alloc_memory(agent, regions);
+	alloc_memory(agent, regions);
 
-    args->in_A = in_A;
-    args->in_B = in_B;
-    args->out_C = out_C;
+	args->in_A = in_A;
+	args->in_B = in_B;
+	args->out_C = out_C;
 
 	init_executable(agent, packet);
 
@@ -141,15 +144,15 @@ static void init_packet(hsa_agent_t *agent, hsa_kernel_dispatch_packet_t *packet
 hsa_status_t get_kernarg(hsa_region_t region, void* data) {
 
 	hsa_region_segment_t segment;
-	hsa_region_get_info(region, HSA_REGION_INFO_SEGMENT, &segment);
+	assert(hsa_region_get_info(region, HSA_REGION_INFO_SEGMENT, &segment) == HSA_STATUS_SUCCESS);
 	if (segment != HSA_REGION_SEGMENT_GLOBAL)
 		return HSA_STATUS_SUCCESS;
 
 	hsa_region_global_flag_t flags;
-	hsa_region_get_info(region, HSA_REGION_INFO_GLOBAL_FLAGS, &flags);
+	assert(hsa_region_get_info(region, HSA_REGION_INFO_GLOBAL_FLAGS, &flags) == HSA_STATUS_SUCCESS);
 
 	bool host_accessible_region = false;
-	hsa_region_get_info(region, HSA_AMD_REGION_INFO_HOST_ACCESSIBLE, &host_accessible_region);
+	assert(hsa_region_get_info(region, HSA_AMD_REGION_INFO_HOST_ACCESSIBLE, &host_accessible_region) == HSA_STATUS_SUCCESS);
 
 	struct test_regions *tr = data;
 	if (flags & HSA_REGION_GLOBAL_FLAG_FINE_GRAINED) {
@@ -186,12 +189,14 @@ int main(int argc, char **argv)
 	assert(status == HSA_STATUS_SUCCESS || status == HSA_STATUS_INFO_BREAK);
 
 	struct test_regions regions;
-	hsa_agent_iterate_regions(gpu_agent, get_kernarg, &regions);
+	status = hsa_agent_iterate_regions(gpu_agent, get_kernarg, &regions);
+	assert(status == HSA_STATUS_SUCCESS || status == HSA_STATUS_INFO_BREAK);
 
 	// Create a queue in the kernel agent. The queue can hold 4 packets
 	hsa_queue_t *queue;
-	hsa_queue_create(gpu_agent, 4, HSA_QUEUE_TYPE_SINGLE, test_error_callback, NULL,
-			 UINT32_MAX, UINT32_MAX, &queue);
+	status = hsa_queue_create(gpu_agent, 4, HSA_QUEUE_TYPE_SINGLE, test_error_callback, NULL,
+				  UINT32_MAX, UINT32_MAX, &queue);
+	assert(status == HSA_STATUS_SUCCESS);
 
 	// Atomically request a new packet ID.
 	uint64_t packet_id = hsa_queue_load_write_index_relaxed(queue);
@@ -206,7 +211,7 @@ int main(int argc, char **argv)
 	init_packet(&gpu_agent, packet, &regions);
 
 	// Create a signal with an initial value of one to monitor the task completion
-	hsa_signal_create(1, 0, NULL, &packet->completion_signal);
+	assert(hsa_signal_create(1, 0, NULL, &packet->completion_signal) == HSA_STATUS_SUCCESS);
 
 	// Increase queue write index
 	hsa_queue_store_write_index_relaxed(queue, next_packet_id);
