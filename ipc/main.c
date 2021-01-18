@@ -51,17 +51,25 @@ static hsa_status_t test_pool_callback(hsa_amd_memory_pool_t pool, void* data)
 	hsa_amd_segment_t segment;
 	hsa_amd_memory_pool_get_info(
 		pool, HSA_AMD_MEMORY_POOL_INFO_SEGMENT, &segment);
-    printf("segment %d\n", segment);
+	if (HSA_AMD_SEGMENT_GLOBAL != segment)
+		return HSA_STATUS_SUCCESS;
 
 	bool alloc = false;
 	hsa_amd_memory_pool_get_info(
 		pool, HSA_AMD_MEMORY_POOL_INFO_RUNTIME_ALLOC_ALLOWED, &alloc);
-    printf("alloc %d\n", alloc);
+	if (!alloc)
+		return HSA_STATUS_SUCCESS;
  
 	uint32_t flags = 0;
 	hsa_amd_memory_pool_get_info(
 		pool, HSA_AMD_MEMORY_POOL_INFO_GLOBAL_FLAGS, &flags);
-    printf("flags %x\n", flags);
+
+	// VRAM
+	if (flags & HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_COARSE_GRAINED) {
+		hsa_amd_memory_pool_t *ret = data;
+		*ret = pool;
+		return HSA_STATUS_INFO_BREAK;
+	}
 
 	return HSA_STATUS_SUCCESS;
 }
