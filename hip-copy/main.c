@@ -24,8 +24,8 @@ void test_dp(int p2d, int use_hip)
         assert(hipMalloc(&src, BUFF_SIZE) == hipSuccess);
         assert(hipMallocHost(&dst, BUFF_SIZE) == hipSuccess);
     }
-    memset(src, 0, BUFF_SIZE);
-    memset(dst, 0, BUFF_SIZE);
+    assert(hipMemset(src, 0, BUFF_SIZE) == hipSuccess);
+    assert(hipMemset(dst, 0, BUFF_SIZE) == hipSuccess);
 
     struct timespec tv1, tv2;
 	assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
@@ -38,13 +38,13 @@ void test_dp(int p2d, int use_hip)
     assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv2));
 
     double start = tv1.tv_sec;
-	start = start * 1e9 + tv1.tv_nsec;
+    start = start * 1e9 + tv1.tv_nsec;
 
-	double end = tv2.tv_sec;
-	end = end * 1e9 + tv2.tv_nsec;
+    double end = tv2.tv_sec;
+    end = end * 1e9 + tv2.tv_nsec;
 
-	double rate = BUFF_SIZE / (end - start);
-	printf("%s %s copy rate %f GB/s\n", p2d ? "P2D" : "D2P",
+    double rate = BUFF_SIZE / (end - start);
+    printf("%s %s copy rate %f GB/s\n", p2d ? "P2D" : "D2P",
            use_hip ? "hip" : "mem", rate);
 
     if (p2d) {
@@ -65,8 +65,8 @@ void test_dd(int cross_gpu)
     assert(hipMalloc(&dst, BUFF_SIZE) == hipSuccess);
     hipSetDevice(0);
     assert(hipMalloc(&src, BUFF_SIZE) == hipSuccess);
-    memset(src, 0, BUFF_SIZE);
-    memset(dst, 0, BUFF_SIZE);
+    assert(hipMemset(src, 0, BUFF_SIZE) == hipSuccess);
+    assert(hipMemset(dst, 0, BUFF_SIZE) == hipSuccess);
 
     hipStream_t stream;
     assert(hipStreamCreate(&stream) == hipSuccess);
@@ -95,21 +95,20 @@ void test_dd(int cross_gpu)
 void test_copy_one(const char *name, void *dst, void *src)
 {
     struct timespec tv1, tv2;
-	assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
+    assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv1));
 
-    //hipMemcpy(dst, src, BUFF_SIZE, hipMemcpyHostToHost);
-    memcpy(dst, src, BUFF_SIZE);
+    hipMemcpy(dst, src, BUFF_SIZE, hipMemcpyHostToHost);
 
     assert(!clock_gettime(CLOCK_MONOTONIC_RAW, &tv2));
 
     double start = tv1.tv_sec;
-	start = start * 1e9 + tv1.tv_nsec;
+    start = start * 1e9 + tv1.tv_nsec;
 
-	double end = tv2.tv_sec;
-	end = end * 1e9 + tv2.tv_nsec;
+    double end = tv2.tv_sec;
+    end = end * 1e9 + tv2.tv_nsec;
 
-	double rate = BUFF_SIZE / (end - start);
-	printf("%s copy rate %f GB/s\n", name, rate);
+    double rate = BUFF_SIZE / (end - start);
+    printf("%s copy rate %f GB/s\n", name, rate);
 }
 
 void test_pp(void)
@@ -118,8 +117,8 @@ void test_pp(void)
 
     assert(hipMallocHost(&dst, BUFF_SIZE) == hipSuccess);
     assert(hipMallocHost(&src, BUFF_SIZE) == hipSuccess);
-    memset(src, 0, BUFF_SIZE);
-    memset(dst, 0, BUFF_SIZE);
+    assert(hipMemset(src, 0, BUFF_SIZE) == hipSuccess);
+    assert(hipMemset(dst, 0, BUFF_SIZE) == hipSuccess);
 
     for (int i = 0; i < 10; i++)
         test_copy_one("P2P", dst, src);
@@ -181,8 +180,8 @@ void test_ph(int p2h)
 
 int main(void)
 {
-    test_dp(0, 0);
-    test_dp(1, 0);
+    //test_dp(0, 0);
+    //test_dp(1, 0);
     test_dp(0, 1);
     test_dp(1, 1);
 
