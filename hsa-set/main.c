@@ -109,7 +109,7 @@ static hsa_region_t get_gtt_region(hsa_agent_t agent)
 	return ret;
 }
 
-#define BUFF_SIZE (1 << 22)
+#define BUFF_SIZE (1 << 24)
 
 int main(int argc, char **argv)
 {
@@ -126,8 +126,10 @@ int main(int argc, char **argv)
 	assert(status == HSA_STATUS_SUCCESS);
 
 	void *gtt_buf;
-	status = hsa_memory_allocate(gtt_region, BUFF_SIZE, &gtt_buf);
-	assert(status == HSA_STATUS_SUCCESS);
+	//status = hsa_memory_allocate(gtt_region, BUFF_SIZE, &gtt_buf);
+	//assert(status == HSA_STATUS_SUCCESS);
+	assert(!posix_memalign(&gtt_buf, 0x200000, BUFF_SIZE));
+	assert(gtt_buf);
 	memset(gtt_buf, 0, BUFF_SIZE);
 
 	status = hsa_amd_memory_fill(vram_buf, 0x12345678, BUFF_SIZE/sizeof(uint32_t));
