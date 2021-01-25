@@ -22,7 +22,7 @@ int main(void)
 	float *A_h, *B_h, *C_h;
 	float *A_d, *B_d, *C_d;
 	int size = VECTOR_SIZE;
-	int nb = size * sizeof(double);
+	int nb = size * sizeof(float);
 
 	A_h = (float *)malloc(nb);
 	B_h = (float *)malloc(nb);
