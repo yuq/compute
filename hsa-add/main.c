@@ -46,7 +46,12 @@ struct test_regions {
 
 static void init_executable(hsa_agent_t *agent, hsa_kernel_dispatch_packet_t *packet)
 {
-	int fd = open("hello.co", O_RDONLY);
+	char name[32] = {0};
+	assert(hsa_agent_get_info(*agent, HSA_AGENT_INFO_NAME, name) == HSA_STATUS_SUCCESS);
+
+	char filename[32] = {0};
+	snprintf(filename, 32, "hello.%s.co", name);
+	int fd = open(filename, O_RDONLY);
 	assert(fd >= 0);
 
 	hsa_code_object_reader_t reader;
