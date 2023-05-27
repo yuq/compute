@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 
 	// Create a queue in the kernel agent. The queue can hold 4 packets
 	hsa_queue_t *queue;
-	status = hsa_queue_create(gpu_agent, 4, HSA_QUEUE_TYPE_SINGLE, test_error_callback, NULL,
+	status = hsa_queue_create(gpu_agent, 0x40, HSA_QUEUE_TYPE_SINGLE, test_error_callback, NULL,
 				  UINT32_MAX, UINT32_MAX, &queue);
 	assert(status == HSA_STATUS_SUCCESS);
 
